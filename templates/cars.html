@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Directory - AutoEngineer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <a class="logo" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='img/autoengineer-logo.svg') }}" alt="AutoEngineer home"></a>
+        <div>
+            <a href="{{ url_for('home') }}">Home</a>
+            {% if current_user %}<a href="{{ url_for('customer_dashboard') if current_user.role == 'customer' else url_for('engineer_dashboard') }}">Dashboard</a>{% endif %}
+            <a href="{{ url_for('cars') }}">Car directory</a>
+            {% if current_user %}<a href="{{ url_for('profile') }}">Profile</a><a href="{{ url_for('logout') }}">Logout</a>{% else %}<a href="{{ url_for('login') }}">Log in</a>{% endif %}
+        </div>
+    </nav>
+
+    <section class="services">
+        <h2>Find your car</h2>
+        <p>Browse supported makes and models before you book a service. Use the exact model when describing a repair.</p>
+        <form method="GET" action="{{ url_for('cars') }}" class="catalog-filters">
+            <input type="search" name="q" value="{{ search }}" placeholder="Search make or model" aria-label="Search make or model">
+            <select name="make" aria-label="Filter by make">
+                <option value="">All makes</option>
+                {% for item in makes %}<option value="{{ item.make }}" {% if selected_make == item.make %}selected{% endif %}>{{ item.make }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="button small">Search directory</button>
+        </form>
+        <div class="catalog-grid">
+            {% for car in catalog %}
+            <article class="card car-card">
+                <div class="car-card-heading"><span class="car-make">{{ car.make }}</span>{% if car.popular %}<span class="verified-badge">Popular</span>{% endif %}</div>
+                <h3>{{ car.model }}</h3>
+                <div class="meta"><span>{{ car.year_range }}</span><span>{{ car.body_type }}</span></div>
+                <p>{{ car.fuel_type }} powertrain support</p>
+                {% if current_user and current_user.role == 'customer' %}<a class="button secondary small" href="{{ url_for('request_service') }}">Book service</a>{% endif %}
+            </article>
+            {% else %}<p>No cars match that search.</p>{% endfor %}
+        </div>
+    </section>
+</body>
+</html>

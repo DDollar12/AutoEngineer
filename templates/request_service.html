@@ -32,8 +32,24 @@
             <input type="text" name="service_type" placeholder="Service Type" required>
             <textarea name="problem" placeholder="Describe the problem" rows="5" required></textarea>
             <input type="text" name="location" placeholder="Your location" required>
+            <input type="hidden" name="customer_lat" id="customer-latitude">
+            <input type="hidden" name="customer_lng" id="customer-longitude">
+            <p class="location-note" id="location-note">Allow location access to help your engineer find you faster.</p>
             <button type="submit" class="button">Send Request</button>
         </form>
     </section>
+    <script>
+        const locationNote = document.getElementById("location-note");
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                document.getElementById("customer-latitude").value = position.coords.latitude;
+                document.getElementById("customer-longitude").value = position.coords.longitude;
+                locationNote.textContent = "Live pickup point attached to this request.";
+                locationNote.classList.add("location-ready");
+            }, () => {
+                locationNote.textContent = "Location access was skipped. Your written address will still be shared.";
+            });
+        }
+    </script>
 </body>
 </html>

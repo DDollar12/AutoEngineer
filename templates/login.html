@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - AutoEngineer</title>
+    <title>{{ 'Engineer' if selected_role == 'engineer' else 'Customer' }} Login - AutoEngineer</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -18,17 +18,28 @@
         </div>
     </nav>
 
-    <section class="services">
-        <h2>Login</h2>
-        <p>Welcome back to AutoEngineer.</p>
-        <br>
-        <form method="POST" action="{{ url_for('login') }}">
+    <main class="auth-page auth-{{ selected_role }}">
+        <section class="auth-showcase">
+            <span class="eyebrow">AutoEngineer / {{ 'Field operations' if selected_role == 'engineer' else 'Vehicle care' }}</span>
+            <h1>{{ 'Run every job with confidence.' if selected_role == 'engineer' else 'Keep your car moving.' }}</h1>
+            <p>{{ 'Manage assignments, routes, customer updates, and earnings from one focused workspace.' if selected_role == 'engineer' else 'Find trusted engineers, follow service progress, and keep every repair record in one place.' }}</p>
+            <div class="auth-stat"><strong>{{ 'LIVE JOB CONTROL' if selected_role == 'engineer' else 'TRUSTED SERVICE' }}</strong><span>{{ 'Dispatch-ready tools for your next callout.' if selected_role == 'engineer' else 'Clear updates from request to completion.' }}</span></div>
+        </section>
+        <section class="auth-card">
+            <div class="auth-switcher">
+                <a class="{% if selected_role == 'customer' %}active{% endif %}" href="{{ url_for('login', role='customer') }}">Customer</a>
+                <a class="{% if selected_role == 'engineer' %}active{% endif %}" href="{{ url_for('login', role='engineer') }}">Engineer</a>
+            </div>
+            <h2>{{ 'Customer sign in' if selected_role == 'customer' else 'Engineer sign in' }}</h2>
+            <p>{{ 'Access your vehicle care dashboard.' if selected_role == 'customer' else 'Access your jobs and professional workspace.' }}</p>
+            <form method="POST" action="{{ url_for('login', role=selected_role) }}">
+            <input type="hidden" name="role" value="{{ selected_role }}">
             <input type="email" name="email" placeholder="Email Address" required>
-            <br><br>
             <input type="password" name="password" placeholder="Password" required>
-            <br><br>
-            <button type="submit" class="button">Login</button>
-        </form>
-    </section>
+            <button type="submit" class="button">Enter {{ 'customer' if selected_role == 'customer' else 'engineer' }} dashboard</button>
+            </form>
+            <p class="auth-footer">New here? <a href="{{ url_for('customer_register' if selected_role == 'customer' else 'engineer_register') }}">Create a {{ selected_role }} account</a></p>
+        </section>
+    </main>
 </body>
 </html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending Verifications - AutoEngineer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <a class="logo" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='img/autoengineer-logo.svg') }}" alt="AutoEngineer home"></a>
+        <div><a href="{{ url_for('admin_control') }}">Control center</a><a href="{{ url_for('admin_engineers') }}">Engineers</a><a href="{{ url_for('logout') }}">Logout</a></div>
+    </nav>
+    <section class="services">
+        <h2>Pending verifications</h2>
+        <p>Review identity and phone checks submitted by customers and engineers.</p>
+        <div class="panel">
+            {% for verification in verifications %}
+            <div class="request-item verification-item">
+                <strong>{{ verification.name }} <span class="meta-inline">{{ verification.role.title() }}</span></strong>
+                <p>{{ verification.email }}</p>
+                <div class="verification-statuses">
+                    {% for kind, label in [('phone', 'Phone'), ('nin', 'NIN'), ('bvn', 'BVN')] %}
+                        {% set status = verification[kind + '_status'] %}
+                        {% if status in ['pending', 'otp_pending'] %}
+                        <div><span>{{ label }}: {{ status.replace('_', ' ').title() }}{% if kind == 'nin' and verification.nin_last4 %} ending {{ verification.nin_last4 }}{% endif %}{% if kind == 'bvn' and verification.bvn_last4 %} ending {{ verification.bvn_last4 }}{% endif %}</span><form method="POST" action="{{ url_for('update_verification', user_id=verification.user_id, verification_type=kind) }}"><input type="hidden" name="status" value="verified"><button type="submit" class="button small">Approve</button></form><form method="POST" action="{{ url_for('update_verification', user_id=verification.user_id, verification_type=kind) }}"><input type="hidden" name="status" value="rejected"><button type="submit" class="button secondary small">Reject</button></form></div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}<p>No pending verification requests.</p>{% endfor %}
+        </div>
+    </section>
+</body>
+</html>

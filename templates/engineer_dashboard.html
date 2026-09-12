@@ -6,7 +6,7 @@
     <title>Engineer Dashboard - AutoEngineer</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body class="role-engineer">
     <nav>
         <a class="logo" href="{{ url_for('home') }}">
             <img src="{{ url_for('static', filename='img/autoengineer-logo.svg') }}" alt="AutoEngineer home">
@@ -21,8 +21,8 @@
         </div>
     </nav>
 
-    <section class="services">
-        <h2>Engineer Dashboard</h2>
+    <section class="services dashboard-shell">
+        <div class="dashboard-intro engineer-intro"><div><span class="eyebrow">ENGINEER COMMAND</span><h1>Good work starts here.</h1><p>Dispatch, update, and close every job with control.</p></div><a class="button" href="{{ url_for('workspace') }}">Open workbench</a></div>
         <div class="cards">
             <div class="card">
                 <h3>Assigned Jobs</h3>
@@ -53,11 +53,13 @@
                         <form method="POST" action="{{ url_for('update_request_status', request_id=job.id) }}">
                         <select name="status" aria-label="Update service request status">
                                 <option value="pending" {% if job.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="en_route" {% if job.status == 'en_route' %}selected{% endif %}>On the way</option>
                                 <option value="in_progress" {% if job.status == 'in_progress' %}selected{% endif %}>In Progress</option>
                                 <option value="completed" {% if job.status == 'completed' %}selected{% endif %}>Completed</option>
                             </select>
                             <button type="submit" class="button small">Update</button>
                         </form>
+                        {% if job.status == 'en_route' %}<button type="button" class="button secondary small share-location" data-request-id="{{ job.id }}">Share live location</button><span class="location-share-status" data-status-for="{{ job.id }}"></span>{% endif %}
                     </div>
                 {% endfor %}
             {% else %}
@@ -65,5 +67,25 @@
             {% endif %}
         </div>
     </section>
+    <script>
+        document.querySelectorAll(".share-location").forEach((button) => {
+            button.addEventListener("click", () => {
+                const status = document.querySelector(`[data-status-for="${button.dataset.requestId}"]`);
+                if (!navigator.geolocation) {
+                    status.textContent = "Location is not supported on this device.";
+                    return;
+                }
+                status.textContent = "Locating...";
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const response = await fetch(`/api/service-requests/${button.dataset.requestId}/location`, {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({latitude: position.coords.latitude, longitude: position.coords.longitude})
+                    });
+                    status.textContent = response.ok ? "Location shared just now." : "Could not share location.";
+                }, () => { status.textContent = "Location permission is needed."; });
+            });
+        });
+    </script>
 </body>
 </html>

@@ -24,6 +24,16 @@ TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER", "")
 IDENTITY_VERIFICATION_URL = os.environ.get("IDENTITY_VERIFICATION_URL", "")
 IDENTITY_API_KEY = os.environ.get("IDENTITY_API_KEY", "")
+PREMIUM_PAYSTACK_PLAN_CODES = {
+    "weekly": os.environ.get("PAYSTACK_PREMIUM_WEEKLY_PLAN", ""),
+    "monthly": os.environ.get("PAYSTACK_PREMIUM_MONTHLY_PLAN", ""),
+    "annual": os.environ.get("PAYSTACK_PREMIUM_ANNUAL_PLAN", ""),
+}
+PREMIUM_PLANS = {
+    "weekly": {"label": "Weekly", "amount": 3000, "days": 7},
+    "monthly": {"label": "Monthly", "amount": 9000, "days": 30},
+    "annual": {"label": "Annual", "amount": 45000, "days": 365},
+}
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-only-change-this-secret")
@@ -113,6 +123,11 @@ def init_db():
                 service_type TEXT NOT NULL,
                 problem TEXT NOT NULL,
                 location TEXT NOT NULL,
+                customer_lat REAL,
+                customer_lng REAL,
+                engineer_lat REAL,
+                engineer_lng REAL,
+                location_updated_at TIMESTAMP,
                 status TEXT NOT NULL DEFAULT 'pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(customer_id) REFERENCES users(id),
@@ -120,6 +135,26 @@ def init_db():
             )
             """
         )
+
+        service_request_columns = {
+            row[1] if isinstance(row, sqlite3.Row) else row["name"]
+            for row in (
+                conn.execute("PRAGMA table_info(service_requests)").fetchall()
+                if isinstance(conn, sqlite3.Connection)
+                else conn.execute(
+                    "SELECT column_name AS name FROM information_schema.columns WHERE table_name = 'service_requests'"
+                ).fetchall()
+            )
+        }
+        for column, definition in {
+            "customer_lat": "REAL",
+            "customer_lng": "REAL",
+            "engineer_lat": "REAL",
+            "engineer_lng": "REAL",
+            "location_updated_at": "TIMESTAMP",
+        }.items():
+            if column not in service_request_columns:
+                conn.execute(f"ALTER TABLE service_requests ADD COLUMN {column} {definition}")
 
         user_columns = {
             row[1] if isinstance(row, sqlite3.Row) else row["name"]
@@ -298,6 +333,27 @@ def init_db():
             )
             """
         )
+        subscription_columns = {
+            row[1] if isinstance(row, sqlite3.Row) else row["name"]
+            for row in (
+                conn.execute("PRAGMA table_info(subscriptions)").fetchall()
+                if isinstance(conn, sqlite3.Connection)
+                else conn.execute(
+                    "SELECT column_name AS name FROM information_schema.columns WHERE table_name = 'subscriptions'"
+                ).fetchall()
+            )
+        }
+        subscription_migrations = {
+            "billing_cycle": "TEXT NOT NULL DEFAULT 'monthly'",
+            "amount": "INTEGER NOT NULL DEFAULT 0",
+            "reference": "TEXT",
+            "provider": "TEXT DEFAULT 'paystack'",
+            "paid_at": "TIMESTAMP",
+            "expires_at": "TIMESTAMP",
+        }
+        for column, definition in subscription_migrations.items():
+            if column not in subscription_columns:
+                conn.execute(f"ALTER TABLE subscriptions ADD COLUMN {column} {definition}")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS fleet_accounts (
@@ -320,6 +376,54 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS car_catalog (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                make TEXT NOT NULL,
+                model TEXT NOT NULL,
+                year_range TEXT NOT NULL,
+                body_type TEXT NOT NULL,
+                fuel_type TEXT NOT NULL,
+                popular INTEGER NOT NULL DEFAULT 0,
+                UNIQUE(make, model)
+            )
+            """
+        )
+        car_catalog = [
+            ("Toyota", "Corolla", "2014-2025", "Sedan", "Petrol", 1),
+            ("Toyota", "Camry", "2012-2025", "Sedan", "Petrol / Hybrid", 1),
+            ("Toyota", "RAV4", "2013-2025", "SUV", "Petrol / Hybrid", 1),
+            ("Toyota", "Hilux", "2012-2025", "Pickup", "Diesel", 1),
+            ("Honda", "Civic", "2012-2025", "Sedan", "Petrol", 1),
+            ("Honda", "Accord", "2011-2024", "Sedan", "Petrol", 1),
+            ("Honda", "CR-V", "2013-2025", "SUV", "Petrol / Hybrid", 1),
+            ("Hyundai", "Elantra", "2012-2025", "Sedan", "Petrol", 1),
+            ("Hyundai", "Tucson", "2013-2025", "SUV", "Petrol / Hybrid", 1),
+            ("Kia", "Sportage", "2012-2025", "SUV", "Petrol / Diesel", 1),
+            ("Kia", "Sorento", "2012-2025", "SUV", "Petrol / Diesel", 0),
+            ("Ford", "Ranger", "2012-2025", "Pickup", "Diesel", 1),
+            ("Ford", "Escape", "2013-2024", "SUV", "Petrol / Hybrid", 0),
+            ("Mercedes-Benz", "C-Class", "2012-2025", "Sedan", "Petrol / Hybrid", 0),
+            ("Mercedes-Benz", "GLC", "2016-2025", "SUV", "Petrol / Hybrid", 0),
+            ("BMW", "3 Series", "2012-2025", "Sedan", "Petrol / Diesel", 0),
+            ("BMW", "X3", "2012-2025", "SUV", "Petrol / Diesel", 0),
+            ("Volkswagen", "Golf", "2012-2025", "Hatchback", "Petrol / Diesel", 0),
+            ("Volkswagen", "Tiguan", "2012-2025", "SUV", "Petrol / Diesel", 0),
+            ("Nissan", "Altima", "2013-2024", "Sedan", "Petrol", 0),
+            ("Nissan", "X-Trail", "2014-2025", "SUV", "Petrol / Hybrid", 1),
+            ("Lexus", "RX", "2012-2025", "SUV", "Petrol / Hybrid", 0),
+            ("Peugeot", "3008", "2017-2025", "SUV", "Petrol / Diesel", 0),
+            ("Mitsubishi", "Pajero", "2012-2021", "SUV", "Diesel", 0),
+        ]
+        conn.executemany(
+            """
+            INSERT OR IGNORE INTO car_catalog (make, model, year_range, body_type, fuel_type, popular)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            car_catalog,
         )
 
         engineer_count = conn.execute(
@@ -487,16 +591,19 @@ def about():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    selected_role = request.args.get("role", request.form.get("role", "customer"))
+    if selected_role not in {"customer", "engineer"}:
+        selected_role = "customer"
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
 
         if not email or not password:
             flash("Email and password are required.")
-            return render_template("login.html", current_user=current_user())
+            return render_template("login.html", current_user=current_user(), selected_role=selected_role)
 
         with get_db() as conn:
-            user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+            user = conn.execute("SELECT * FROM users WHERE email = ? AND role = ?", (email, selected_role)).fetchone()
 
         if user and check_password_hash(user["password_hash"], password):
             session["user_id"] = user["id"]
@@ -507,7 +614,7 @@ def login():
 
         flash("Invalid email or password.")
 
-    return render_template("login.html", current_user=current_user())
+    return render_template("login.html", current_user=current_user(), selected_role=selected_role)
 
 
 @app.route("/logout")
@@ -687,7 +794,7 @@ def update_request_status(request_id):
         return redirect(url_for("login"))
 
     status = request.form.get("status", "pending")
-    if status not in {"pending", "in_progress", "completed"}:
+    if status not in {"pending", "en_route", "in_progress", "completed"}:
         status = "pending"
 
     with get_db() as conn:
@@ -701,6 +808,46 @@ def update_request_status(request_id):
     return redirect(url_for("engineer_dashboard"))
 
 
+@app.route("/api/service-requests/<int:request_id>/location", methods=["GET", "POST"])
+@login_required
+def service_request_location(request_id):
+    user = current_user()
+    with get_db() as conn:
+        service_request = conn.execute(
+            "SELECT * FROM service_requests WHERE id = ? AND (customer_id = ? OR engineer_id = ?)",
+            (request_id, user["id"], user["id"]),
+        ).fetchone()
+        if not service_request:
+            abort(404)
+
+        if request.method == "POST":
+            if service_request["engineer_id"] != user["id"]:
+                abort(403)
+            coordinates = request.get_json(silent=True) or {}
+            latitude = coordinates.get("latitude")
+            longitude = coordinates.get("longitude")
+            if not isinstance(latitude, (int, float)) or not isinstance(longitude, (int, float)):
+                return {"error": "Valid coordinates are required."}, 400
+            if not -90 <= latitude <= 90 or not -180 <= longitude <= 180:
+                return {"error": "Coordinates are outside valid bounds."}, 400
+            conn.execute(
+                "UPDATE service_requests SET engineer_lat = ?, engineer_lng = ?, location_updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (latitude, longitude, request_id),
+            )
+            conn.commit()
+            return {"ok": True, "latitude": latitude, "longitude": longitude}
+
+    return {
+        "request_id": service_request["id"],
+        "status": service_request["status"],
+        "customer_lat": service_request["customer_lat"],
+        "customer_lng": service_request["customer_lng"],
+        "engineer_lat": service_request["engineer_lat"],
+        "engineer_lng": service_request["engineer_lng"],
+        "location_updated_at": service_request["location_updated_at"],
+    }
+
+
 @app.route("/find-engineers")
 def find_engineers():
     with get_db() as conn:
@@ -709,6 +856,25 @@ def find_engineers():
         ).fetchall()
 
     return render_template("find_engineers.html", current_user=current_user(), engineers=engineers)
+
+
+@app.route("/cars")
+def cars():
+    search = request.args.get("q", "").strip()
+    make = request.args.get("make", "").strip()
+    query = "SELECT * FROM car_catalog WHERE 1 = 1"
+    parameters = []
+    if search:
+        query += " AND (make LIKE ? OR model LIKE ?)"
+        parameters.extend([f"%{search}%", f"%{search}%"])
+    if make:
+        query += " AND make = ?"
+        parameters.append(make)
+    query += " ORDER BY popular DESC, make ASC, model ASC"
+    with get_db() as conn:
+        catalog = conn.execute(query, parameters).fetchall()
+        makes = conn.execute("SELECT DISTINCT make FROM car_catalog ORDER BY make ASC").fetchall()
+    return render_template("cars.html", current_user=current_user(), catalog=catalog, makes=makes, search=search, selected_make=make)
 
 
 @app.route("/engineer-profile/<int:engineer_id>")
@@ -741,6 +907,8 @@ def request_service():
         service_type = request.form.get("service_type", "").strip()
         problem = request.form.get("problem", "").strip()
         location = request.form.get("location", "").strip()
+        customer_lat = request.form.get("customer_lat", type=float)
+        customer_lng = request.form.get("customer_lng", type=float)
 
         if not all([engineer_id, service_type, problem, location]):
             flash("Please complete all service request details.")
@@ -756,10 +924,10 @@ def request_service():
                 return render_template("request_service.html", current_user=user, engineers=engineers)
             conn.execute(
                 """
-                INSERT INTO service_requests (customer_id, engineer_id, service_type, problem, location, status)
-                VALUES (?, ?, ?, ?, ?, 'pending')
+                INSERT INTO service_requests (customer_id, engineer_id, service_type, problem, location, customer_lat, customer_lng, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
                 """,
-                (user["id"], engineer_id, service_type, problem, location),
+                (user["id"], engineer_id, service_type, problem, location, customer_lat, customer_lng),
             )
             conn.commit()
 
@@ -1021,7 +1189,108 @@ def payment_webhook():
                 (payment["request_id"],),
             )
             conn.commit()
+        subscription = conn.execute(
+            "SELECT * FROM subscriptions WHERE reference = ?", (reference,)
+        ).fetchone()
+        if subscription and transaction.get("amount") == subscription["amount"] * 100:
+            expires_at = datetime.now(timezone.utc) + timedelta(days=PREMIUM_PLANS[subscription["billing_cycle"]]["days"])
+            conn.execute(
+                "UPDATE subscriptions SET status = 'active', paid_at = CURRENT_TIMESTAMP, expires_at = ? WHERE id = ? AND status = 'pending'",
+                (expires_at.isoformat(), subscription["id"]),
+            )
+            conn.commit()
     return "ok", 200
+
+
+@app.route("/subscriptions/initialize", methods=["GET", "POST"])
+@role_required("engineer")
+def initialize_subscription():
+    user = current_user()
+    billing_cycle = request.values.get("billing_cycle", "monthly")
+    plan = PREMIUM_PLANS.get(billing_cycle)
+    if not plan:
+        abort(400)
+
+    reference = f"AE-SUB-{user['id']}-{secrets.token_hex(8).upper()}"
+    payload = {
+        "email": user["email"],
+        "amount": plan["amount"] * 100,
+        "currency": "NGN",
+        "reference": reference,
+        "callback_url": url_for("subscription_callback", _external=True),
+        "metadata": {
+            "type": "premium_subscription",
+            "user_id": user["id"],
+            "billing_cycle": billing_cycle,
+        },
+    }
+    plan_code = PREMIUM_PAYSTACK_PLAN_CODES.get(billing_cycle)
+    if plan_code:
+        payload["plan"] = plan_code
+
+    try:
+        result = paystack_request("/transaction/initialize", method="POST", payload=payload)
+    except (RuntimeError, HTTPError, URLError, ValueError):
+        flash("Paystack is not configured or could not be reached. Check your payment settings.")
+        return redirect(url_for("business"))
+    authorization_url = result.get("data", {}).get("authorization_url")
+    if not result.get("status") or not authorization_url:
+        flash("Paystack could not initialize this subscription.")
+        return redirect(url_for("business"))
+
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE subscriptions SET status = 'cancelled' WHERE engineer_id = ? AND status = 'pending'",
+            (user["id"],),
+        )
+        conn.execute(
+            """
+            INSERT INTO subscriptions (engineer_id, plan, billing_cycle, amount, reference, provider, status)
+            VALUES (?, 'premium', ?, ?, ?, 'paystack', 'pending')
+            """,
+            (user["id"], billing_cycle, plan["amount"], reference),
+        )
+        conn.commit()
+    return redirect(authorization_url)
+
+
+@app.route("/subscriptions/callback")
+@login_required
+def subscription_callback():
+    reference = request.args.get("reference", "").strip()
+    user = current_user()
+    if not reference:
+        flash("Subscription payment reference was not supplied.")
+        return redirect(url_for("business"))
+    try:
+        result = paystack_request(f"/transaction/verify/{reference}")
+    except (RuntimeError, HTTPError, URLError, ValueError):
+        flash("Subscription payment verification could not be completed.")
+        return redirect(url_for("business"))
+
+    transaction = result.get("data", {})
+    with get_db() as conn:
+        subscription = conn.execute(
+            "SELECT * FROM subscriptions WHERE reference = ? AND engineer_id = ?",
+            (reference, user["id"]),
+        ).fetchone()
+        paid = result.get("status") and transaction.get("status") == "success"
+        valid_amount = subscription and transaction.get("amount") == subscription["amount"] * 100
+        if not subscription:
+            abort(404)
+        if paid and valid_amount:
+            expires_at = datetime.now(timezone.utc) + timedelta(days=PREMIUM_PLANS[subscription["billing_cycle"]]["days"])
+            conn.execute(
+                "UPDATE subscriptions SET status = 'active', paid_at = CURRENT_TIMESTAMP, expires_at = ? WHERE id = ? AND status = 'pending'",
+                (expires_at.isoformat(), subscription["id"]),
+            )
+            conn.commit()
+            flash(f"Premium {subscription['billing_cycle']} subscription is active.")
+        else:
+            conn.execute("UPDATE subscriptions SET status = 'failed' WHERE id = ? AND status = 'pending'", (subscription["id"],))
+            conn.commit()
+            flash("Paystack did not confirm this subscription payment.")
+    return redirect(url_for("business"))
 
 
 @app.route("/disputes/<int:request_id>", methods=["POST"])
@@ -1111,6 +1380,43 @@ def admin_control():
     return render_template("admin_control.html", current_user=current_user(), **data)
 
 
+@app.route("/admin/verifications")
+@admin_required
+def admin_verifications():
+    with get_db() as conn:
+        verifications = conn.execute(
+            """
+            SELECT tc.*, u.name, u.email, u.role
+            FROM trust_checks tc
+            JOIN users u ON u.id = tc.user_id
+            WHERE tc.identity_status = 'pending'
+               OR tc.phone_status IN ('pending', 'otp_pending')
+               OR tc.nin_status = 'pending'
+               OR tc.bvn_status = 'pending'
+            ORDER BY tc.updated_at DESC
+            """
+        ).fetchall()
+    return render_template("admin_verifications.html", current_user=current_user(), verifications=verifications)
+
+
+@app.route("/admin/verifications/<int:user_id>/<string:verification_type>", methods=["POST"])
+@admin_required
+def update_verification(user_id, verification_type):
+    if verification_type not in {"identity", "phone", "nin", "bvn"}:
+        abort(400)
+    status = request.form.get("status")
+    if status not in {"verified", "rejected"}:
+        abort(400)
+    with get_db() as conn:
+        conn.execute(
+            f"UPDATE trust_checks SET {verification_type}_status = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+            (status, user_id),
+        )
+        conn.commit()
+    flash("Verification status updated.")
+    return redirect(url_for("admin_verifications"))
+
+
 @app.route("/admin/control/<string:record_type>/<int:record_id>", methods=["POST"])
 @admin_required
 def update_admin_record(record_type, record_id):
@@ -1135,12 +1441,10 @@ def business():
         action = request.form.get("action")
         with get_db() as conn:
             if action == "subscribe" and user["role"] == "engineer":
-                plan = request.form.get("plan", "pro")
-                if plan not in {"pro", "premium"}:
+                billing_cycle = request.form.get("billing_cycle", "monthly")
+                if billing_cycle not in PREMIUM_PLANS:
                     abort(400)
-                conn.execute("INSERT INTO subscriptions (engineer_id, plan) VALUES (?, ?)", (user["id"], plan))
-                conn.commit()
-                flash("Engineer subscription request recorded. Connect a payment provider to charge it.")
+                return redirect(url_for("initialize_subscription", billing_cycle=billing_cycle))
             elif action == "fleet":
                 company_name = request.form.get("company_name", "").strip()
                 vehicles = request.form.get("vehicles", type=int)
@@ -1152,10 +1456,14 @@ def business():
                     flash("Fleet service inquiry submitted.")
         return redirect(url_for("business"))
     with get_db() as conn:
+        conn.execute(
+            "UPDATE subscriptions SET status = 'expired' WHERE engineer_id = ? AND status = 'active' AND expires_at IS NOT NULL AND expires_at < CURRENT_TIMESTAMP",
+            (user["id"],),
+        )
         subscriptions = conn.execute("SELECT * FROM subscriptions WHERE engineer_id = ? ORDER BY created_at DESC", (user["id"],)).fetchall() if user["role"] == "engineer" else []
         fleets = conn.execute("SELECT * FROM fleet_accounts WHERE owner_id = ? ORDER BY created_at DESC", (user["id"],)).fetchall()
         commission = conn.execute("SELECT COALESCE(SUM(commission), 0) AS total FROM payments").fetchone()["total"]
-    return render_template("business.html", current_user=user, subscriptions=subscriptions, fleets=fleets, commission=commission)
+    return render_template("business.html", current_user=user, subscriptions=subscriptions, fleets=fleets, commission=commission, premium_plans=PREMIUM_PLANS)
 
 
 @app.route("/profile")

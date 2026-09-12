@@ -620,6 +620,21 @@ def home():
     return render_template("index.html", current_user=current_user())
 
 
+@app.route("/home")
+def home_alias():
+    return redirect(url_for("home"))
+
+
+@app.route("/health")
+def health():
+    return {"status": "ok", "service": "autoengineer"}
+
+
+@app.errorhandler(404)
+def not_found(error):
+    return render_template("404.html", current_user=current_user()), 404
+
+
 @app.route("/about")
 def about():
     return render_template("about.html", current_user=current_user())

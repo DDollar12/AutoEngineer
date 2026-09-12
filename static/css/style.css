@@ -43,6 +43,27 @@ body {
     padding: 70px 10%;
 }
 
+.not-found-page {
+    max-width: 720px;
+    min-height: calc(100vh - 100px);
+    padding: 15vh 10%;
+}
+
+.not-found-page h1 {
+    margin: 14px 0 18px;
+    color: #f8fafc;
+    font-size: clamp(3rem, 7vw, 6rem);
+    line-height: 0.96;
+    letter-spacing: -0.06em;
+}
+
+.not-found-page p {
+    max-width: 540px;
+    margin-bottom: 28px;
+    color: var(--muted);
+    font-size: 1.1rem;
+}
+
 .auth-showcase {
     max-width: 620px;
 }

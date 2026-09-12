@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page not found - AutoEngineer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <a class="logo" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='img/autoengineer-logo.svg') }}" alt="AutoEngineer home"></a>
+        <div><a href="{{ url_for('home') }}">Home</a>{% if current_user %}<a href="{{ url_for('customer_dashboard') if current_user.role == 'customer' else url_for('engineer_dashboard') }}">Dashboard</a><a href="{{ url_for('logout') }}">Logout</a>{% else %}<a href="{{ url_for('login') }}">Login</a>{% endif %}</div>
+    </nav>
+    <main class="not-found-page">
+        <span class="eyebrow">AUTOENGINEER / 404</span>
+        <h1>That page is not here.</h1>
+        <p>The link may be outdated or belongs to another service. Return to AutoEngineer and continue where you left off.</p>
+        <a class="button" href="{{ url_for('home') }}">Back to AutoEngineer</a>
+    </main>
+</body>
+</html>

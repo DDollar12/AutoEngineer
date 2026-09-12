@@ -4,6 +4,7 @@ import sqlite3
 import json
 import hashlib
 import hmac
+import base64
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 from urllib.error import HTTPError, URLError
@@ -577,6 +578,27 @@ def paystack_request(endpoint, method="GET", payload=None):
     )
     with urlopen(request_object, timeout=20) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def send_phone_otp(phone_number, otp):
+    if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN or not TWILIO_FROM_NUMBER:
+        return False
+    endpoint = f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json"
+    body = urlencode({
+        "To": phone_number,
+        "From": TWILIO_FROM_NUMBER,
+        "Body": f"Your AutoEngineer verification code is {otp}. It expires in 10 minutes.",
+    }).encode("utf-8")
+    credentials = f"{TWILIO_ACCOUNT_SID}:{TWILIO_AUTH_TOKEN}".encode("utf-8")
+    headers = {
+        "Authorization": "Basic " + base64.b64encode(credentials).decode("ascii"),
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+    try:
+        with urlopen(UrlRequest(endpoint, data=body, headers=headers, method="POST"), timeout=20) as response:
+            return 200 <= response.status < 300
+    except (HTTPError, URLError, ValueError):
+        return False
 
 
 @app.route("/")
@@ -1320,7 +1342,12 @@ def request_phone_verification():
             (generate_password_hash(otp), (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat(), user["id"]),
         )
         conn.commit()
-    flash("Phone OTP created. Configure Twilio to deliver it by SMS.")
+    if send_phone_otp(user["phone"], otp):
+        flash("Phone OTP sent by SMS. It expires in 10 minutes.")
+    elif os.environ.get("FLASK_ENV") == "production":
+        flash("We could not send your phone OTP. Please contact support or try again later.")
+    else:
+        flash(f"Phone OTP created for local testing: {otp}. Configure Twilio for SMS delivery.")
     return redirect(url_for("workspace"))
 
 
@@ -1359,7 +1386,7 @@ def submit_identity_verification():
     with get_db() as conn:
         ensure_trust_check(conn, user["id"])
         conn.execute(
-            f"UPDATE trust_checks SET {identity_type}_status = 'pending', {identity_type}_last4 = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+            f"UPDATE trust_checks SET identity_status = 'pending', {identity_type}_status = 'pending', {identity_type}_last4 = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
             (identity_number[-4:], user["id"]),
         )
         conn.commit()
@@ -1389,10 +1416,9 @@ def admin_verifications():
             SELECT tc.*, u.name, u.email, u.role
             FROM trust_checks tc
             JOIN users u ON u.id = tc.user_id
-            WHERE tc.identity_status = 'pending'
-               OR tc.phone_status IN ('pending', 'otp_pending')
-               OR tc.nin_status = 'pending'
-               OR tc.bvn_status = 'pending'
+                WHERE tc.phone_status = 'otp_pending'
+                    OR (tc.nin_status = 'pending' AND tc.nin_last4 IS NOT NULL)
+                    OR (tc.bvn_status = 'pending' AND tc.bvn_last4 IS NOT NULL)
             ORDER BY tc.updated_at DESC
             """
         ).fetchall()
@@ -1412,6 +1438,11 @@ def update_verification(user_id, verification_type):
             f"UPDATE trust_checks SET {verification_type}_status = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
             (status, user_id),
         )
+        if verification_type in {"nin", "bvn"}:
+            conn.execute(
+                "UPDATE trust_checks SET identity_status = ? WHERE user_id = ?",
+                (status, user_id),
+            )
         conn.commit()
     flash("Verification status updated.")
     return redirect(url_for("admin_verifications"))

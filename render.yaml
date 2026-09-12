@@ -17,6 +17,12 @@ services:
         sync: false
       - key: PAYSTACK_SECRET_KEY
         sync: false
+      - key: PAYSTACK_PREMIUM_WEEKLY_PLAN
+        sync: false
+      - key: PAYSTACK_PREMIUM_MONTHLY_PLAN
+        sync: false
+      - key: PAYSTACK_PREMIUM_ANNUAL_PLAN
+        sync: false
 
 databases:
   - name: autoengineer-db

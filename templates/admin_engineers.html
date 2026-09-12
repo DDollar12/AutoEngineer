@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engineer Verification - AutoEngineer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <a class="logo" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='img/autoengineer-logo.svg') }}" alt="AutoEngineer home"></a>
+        <div><a href="{{ url_for('logout') }}">Logout</a></div>
+    </nav>
+    <section class="services">
+        <h2>Engineer Verification</h2>
+        <p>Review professional profiles before they appear in the public engineer directory.</p>
+        <div class="panel">
+            {% for engineer in engineers %}
+                <div class="request-item">
+                    <strong>{{ engineer.name }}</strong>
+                    <p>{{ engineer.specialization }} · {{ engineer.experience }} · {{ engineer.location }}</p>
+                    <div class="meta"><span>Email: {{ engineer.email }}</span><span>Status: {{ 'Verified' if engineer.verified else 'Pending' }}</span></div>
+                    {% if not engineer.verified %}
+                        <form method="POST" action="{{ url_for('verify_engineer', engineer_id=engineer.id) }}">
+                            <button type="submit" class="button small">Verify engineer</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p>No engineer accounts found.</p>
+            {% endfor %}
+        </div>
+    </section>
+</body>
+</html>

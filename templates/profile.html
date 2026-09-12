@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - AutoEngineer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <a class="logo" href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='img/autoengineer-logo.svg') }}" alt="AutoEngineer home">
+        </a>
+        <div>
+            <a href="{{ url_for('home') }}">Home</a>
+            {% if user.role == 'customer' %}
+                <a href="{{ url_for('customer_dashboard') }}">Dashboard</a>
+            {% else %}
+                <a href="{{ url_for('engineer_dashboard') }}">Dashboard</a>
+            {% endif %}
+            <a href="{{ url_for('bonuses') }}">Bonuses & Withdraw</a>
+            <a href="{{ url_for('workspace') }}">Workspace</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </nav>
+
+    <section class="services">
+        <h2>My Profile</h2>
+        <div class="card profile-card">
+            <p><strong>Name:</strong> {{ user.name }}</p>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Role:</strong> {{ user.role.title() }}</p>
+            <p><strong>Location:</strong> {{ user.location or 'Not specified' }}</p>
+            <p><strong>Phone:</strong> {{ user.phone or 'Not specified' }}</p>
+            {% if user.role == 'customer' %}
+                <p><strong>Car Model:</strong> {{ user.car_model or 'Not specified' }}</p>
+            {% else %}
+                <p><strong>Specialization:</strong> {{ user.specialization or 'Not specified' }}</p>
+                <p><strong>Experience:</strong> {{ user.experience or 'Not specified' }}</p>
+            {% endif %}
+        </div>
+    </section>
+</body>
+</html>

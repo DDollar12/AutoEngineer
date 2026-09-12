@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bonuses & Withdraw - AutoEngineer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <a class="logo" href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='img/autoengineer-logo.svg') }}" alt="AutoEngineer home">
+        </a>
+        <div>
+            <a href="{{ url_for('home') }}">Home</a>
+            {% if current_user.role == 'customer' %}
+                <a href="{{ url_for('customer_dashboard') }}">Dashboard</a>
+            {% else %}
+                <a href="{{ url_for('engineer_dashboard') }}">Dashboard</a>
+            {% endif %}
+            <a href="{{ url_for('profile') }}">Profile</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </nav>
+
+    <section class="services bonus-page">
+        <h2>Bonuses & Withdraw</h2>
+        <p>Your rewards are added to your wallet automatically and can be requested as a payout below.</p>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-message">
+                    {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="cards bonus-cards">
+            <div class="card bonus-card">
+                <span class="bonus-label">Referral reward</span>
+                <h3>#200</h3>
+                <p>Share your referral code and earn #200 when a new customer registers with it.</p>
+                <strong class="referral-code">{{ current_user.referral_code }}</strong>
+            </div>
+            <div class="card bonus-card balance-card">
+                <span class="bonus-label">Available balance</span>
+                <h3>#{{ wallet.balance }}</h3>
+                <p>Ready to withdraw to your bank account.</p>
+            </div>
+        </div>
+
+        <div class="panel withdrawal-panel">
+            <h3>Request a withdrawal</h3>
+            <form method="POST" action="{{ url_for('bonuses') }}">
+                <label for="amount">Amount</label>
+                <input id="amount" type="number" name="amount" min="1" max="{{ wallet.balance }}" placeholder="Amount to withdraw" required>
+                <label for="account_name">Account name</label>
+                <input id="account_name" type="text" name="account_name" placeholder="Name on account" required>
+                <label for="account_number">Account number</label>
+                <input id="account_number" type="text" name="account_number" inputmode="numeric" placeholder="Bank account number" required>
+                <label for="bank_name">Bank name</label>
+                <input id="bank_name" type="text" name="bank_name" placeholder="Bank name" required>
+                <button type="submit" class="button">Request withdrawal</button>
+            </form>
+        </div>
+
+        {% if withdrawals %}
+            <div class="panel">
+                <h3>Withdrawal history</h3>
+                {% for withdrawal in withdrawals %}
+                    <div class="request-item">
+                        <strong>#{{ withdrawal.amount }} to {{ withdrawal.bank_name }}</strong>
+                        <div class="meta">
+                            <span>Account: {{ withdrawal.account_number }}</span>
+                            <span>Status: {{ withdrawal.status.title() }}</span>
+                            <span>{{ withdrawal.created_at }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+</body>
+</html>

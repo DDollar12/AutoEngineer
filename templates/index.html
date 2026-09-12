@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoEngineer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <nav>
+        <a class="logo" href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='img/autoengineer-logo.svg') }}" alt="AutoEngineer home">
+        </a>
+
+        <div>
+            <a href="/">Home</a>
+            <a href="{{ url_for('about') }}">About</a>
+            <a href="{{ url_for('engineer_register') }}">Engineer</a>
+            <a href="{{ url_for('customer_register') }}">Customer</a>
+            <a href="{{ url_for('login') }}">Login</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Find the right Automobile Engineer</h1>
+            <p>
+                Get professional automobile repair and engineering services from trusted engineers across Nigeria.
+            </p>
+
+            <div class="offer-banner">
+                <strong>New applicant bonus: #200</strong>
+                <span>Refer someone with your referral link and earn a #200 bonus.</span>
+            </div>
+
+            <a href="{{ url_for('customer_register') }}" class="button">
+                Register as Customer
+            </a>
+
+            <a href="{{ url_for('engineer_register') }}" class="button secondary">
+                Register as Engineer
+            </a>
+        </div>
+    </section>
+
+    <section class="services" id="services">
+        <h2>How AutoEngineer Works</h2>
+        <p>Connect with skilled Nigerian automobile engineers, get a clear quote, and keep every service request in one place.</p>
+
+        <div class="cards">
+            <div class="card feature-card">
+                <img src="{{ url_for('static', filename='img/car-diagnostics.svg') }}" alt="Automobile diagnostics service">
+                <h3>Find an Engineer</h3>
+                <p>
+                    Search for automobile engineers based on location, expertise, and availability.
+                </p>
+            </div>
+
+            <div class="card feature-card">
+                <img src="{{ url_for('static', filename='img/chat-support.svg') }}" alt="Secure chat support">
+                <h3>Chat Securely</h3>
+                <p>
+                    Discuss your vehicle problem directly with the engineer through the platform.
+                </p>
+            </div>
+
+            <div class="card feature-card">
+                <img src="{{ url_for('static', filename='img/service-quote.svg') }}" alt="Service quote document">
+                <h3>Get a Price</h3>
+                <p>
+                    Receive a clear service price before approving the work.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 AutoEngineer. All rights reserved.</p>
+    </footer>
+</body>
+</html>
+
+
+

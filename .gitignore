@@ -1,0 +1,20 @@
+# Local virtual environment and runtime data
+Include/
+Lib/
+Scripts/
+__pycache__/
+*.py[cod]
+autoengineer.db
+.env
+
+# Keep application and deployment files tracked.
+!app.py
+!requirements.txt
+!render.yaml
+!.env.example
+!templates/
+!templates/**
+!static/
+!static/**
+!index.html
+pyvenv.cfg

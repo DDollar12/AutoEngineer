@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Registration - AutoEngineer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <a class="logo" href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='img/autoengineer-logo.svg') }}" alt="AutoEngineer home">
+        </a>
+        <div>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('engineer_register') }}">Engineer</a>
+            <a href="{{ url_for('login') }}">Login</a>
+        </div>
+    </nav>
+
+    <section class="services">
+        <h2>Become a Customer</h2>
+        <p>Create your customer account to find trusted AutoEngineer professionals.</p>
+        <br>
+
+        <form method="POST" action="/customer-register">
+            <input type="text" name="name" placeholder="Full Name" required>
+            <br><br>
+
+            <input type="email" name="email" placeholder="Email Address" required>
+            <br><br>
+
+            <input type="tel" name="phone" placeholder="Phone Number" required>
+            <br><br>
+
+            <input type="password" name="password" placeholder="Password" required>
+            <br><br>
+
+            <input type="text" name="car_model" placeholder="Car Model" required>
+            <br><br>
+
+            <input type="text" name="location" placeholder="Location" required>
+            <br><br>
+
+            <input type="text" name="referral_code" placeholder="Referral Code (optional)">
+            <br><br>
+
+            <button type="submit" class="button">Create Customer Account</button>
+        </form>
+    </section>
+</body>
+</html>

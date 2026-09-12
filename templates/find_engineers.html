@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Engineers - AutoEngineer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <a class="logo" href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='img/autoengineer-logo.svg') }}" alt="AutoEngineer home">
+        </a>
+        <div>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('customer_dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('request_service') }}">Request Service</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </nav>
+
+    <section class="services">
+        <h2>Available Engineers</h2>
+        <div class="cards">
+            {% for engineer in engineers %}
+            <div class="card">
+                {% if 'Electrical' in engineer.specialization %}
+                    {% set engineer_image = 'img/car-electrical.svg' %}
+                {% elif 'Body' in engineer.specialization %}
+                    {% set engineer_image = 'img/car-body-repair.svg' %}
+                {% else %}
+                    {% set engineer_image = 'img/car-diagnostics.svg' %}
+                {% endif %}
+                <img class="engineer-image" src="{{ url_for('static', filename=engineer_image) }}" alt="{{ engineer.specialization }} service vehicle">
+                <h3>{{ engineer.name }}</h3>
+                <span class="verified-badge">Verified engineer</span>
+                <p><strong>Specialization:</strong> {{ engineer.specialization }}</p>
+                <p><strong>Location:</strong> {{ engineer.location }}</p>
+                <p><strong>Experience:</strong> {{ engineer.experience }}</p>
+                <br>
+                <a class="button" href="{{ url_for('engineer_profile', engineer_id=engineer.id) }}">View Profile</a>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</body>
+</html>

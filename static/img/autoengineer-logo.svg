@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" role="img" aria-labelledby="title desc">
+  <title id="title">AutoEngineer</title>
+  <desc id="desc">AutoEngineer logo with a blue vehicle wheel mark</desc>
+  <rect width="320" height="72" rx="16" fill="#07111f"/>
+  <circle cx="38" cy="36" r="22" fill="#2563eb"/>
+  <circle cx="38" cy="36" r="9" fill="#07111f"/>
+  <path d="M38 14v13M38 45v13M16 36h13M47 36h13" stroke="#fbbf24" stroke-width="4" stroke-linecap="round"/>
+  <text x="76" y="45" fill="#f8fafc" font-family="Segoe UI, sans-serif" font-size="29" font-weight="700">Auto<tspan fill="#60a5fa">Engineer</tspan></text>
+</svg>

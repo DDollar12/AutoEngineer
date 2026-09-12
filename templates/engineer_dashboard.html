@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engineer Dashboard - AutoEngineer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <a class="logo" href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='img/autoengineer-logo.svg') }}" alt="AutoEngineer home">
+        </a>
+        <div>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('bonuses') }}">Bonuses & Withdraw</a>
+            <a href="{{ url_for('workspace') }}">Engineer App</a>
+            <a href="{{ url_for('business') }}">Subscription</a>
+            <a href="{{ url_for('profile') }}">Profile</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </nav>
+
+    <section class="services">
+        <h2>Engineer Dashboard</h2>
+        <div class="cards">
+            <div class="card">
+                <h3>Assigned Jobs</h3>
+                <p>{{ total_jobs }} requests assigned.</p>
+            </div>
+            <div class="card">
+                <h3>Pending</h3>
+                <p>{{ pending_jobs }} awaiting action.</p>
+            </div>
+            <div class="card">
+                <h3>Completed</h3>
+                <p>{{ completed_jobs }} finished jobs.</p>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Current Service Requests</h3>
+            {% if jobs %}
+                {% for job in jobs %}
+                    <div class="request-item">
+                        <strong>{{ job.service_type }}</strong>
+                        <p>{{ job.problem }}</p>
+                        <div class="meta">
+                            <span>Customer: {{ job.customer_name }}</span>
+                            <span>Phone: {{ job.customer_phone }}</span>
+                            <span>Location: {{ job.location }}</span>
+                        </div>
+                        <form method="POST" action="{{ url_for('update_request_status', request_id=job.id) }}">
+                        <select name="status" aria-label="Update service request status">
+                                <option value="pending" {% if job.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="in_progress" {% if job.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                <option value="completed" {% if job.status == 'completed' %}selected{% endif %}>Completed</option>
+                            </select>
+                            <button type="submit" class="button small">Update</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No jobs assigned yet. Your dashboard is clear.</p>
+            {% endif %}
+        </div>
+    </section>
+</body>
+</html>

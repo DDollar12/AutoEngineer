@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 from urllib.error import HTTPError, URLError
 from urllib.request import Request as UrlRequest, urlopen
 from functools import wraps
-
+from openai import OpenAI
 from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -20,6 +20,13 @@ DB_PATH = os.path.join(BASE_DIR, "autoengineer.db")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY", "")
 PAYSTACK_BASE_URL = "https://api.paystack.co"
+# =========================
+# OPENAI AI CUSTOMER CARE
+# =========================
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.5")
+
+openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER", "")
@@ -147,10 +154,23 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(customer_id) REFERENCES users(id),
                 FOREIGN KEY(engineer_id) REFERENCES users(id)
+                
             )
             """
+        )        
+                 
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ai_chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                session_id TEXT NOT NULL,
+                role TEXT NOT NULL,
+                body TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """
         )
-
         service_request_columns = {
             row[1] if isinstance(row, sqlite3.Row) else row["name"]
             for row in (
@@ -522,11 +542,300 @@ def current_user():
     user_id = session.get("user_id")
     if not user_id:
         return None
+        
 
     with get_db() as conn:
         return conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+# =========================
+# AI CUSTOMER CARE HELPERS
+# =========================
 
+def detect_emergency(message):
+    """
+    Detect potentially dangerous vehicle situations.
+    This is only a safety filter, not a mechanical diagnosis.
+    """
+    text = message.lower()
 
+    emergency_keywords = [
+        "brake failure",
+        "brakes not working",
+        "brake not working",
+        "no brakes",
+        "brakes failed",
+        "fire",
+        "car is on fire",
+        "engine is on fire",
+        "smoke coming from engine",
+        "heavy smoke",
+        "fuel leak",
+        "petrol leak",
+        "fuel is leaking",
+        "petrol is leaking",
+        "gasoline leak",
+        "crash",
+        "accident",
+        "collision",
+        "stuck on the road",
+        "stranded",
+        "overheating badly",
+        "engine overheating",
+        "temperature is red",
+        "coolant boiling",
+        "wheel came off",
+        "tyre burst on highway"
+    ]
+
+    matched = [
+        keyword for keyword in emergency_keywords
+        if keyword in text
+    ]
+
+    return len(matched) > 0, matched
+    
+def detect_service_category(message):
+    """
+    Gives the AI a simple starting category for the customer's problem.
+    """
+    text = message.lower()
+
+    categories = {
+        "Brake": [
+            "brake",
+            "brakes",
+            "brake pad",
+            "brake disc"
+        ],
+        "Engine": [
+            "engine",
+            "piston",
+            "oil consumption",
+            "engine noise",
+            "knocking"
+        ],
+        "Electrical": [
+            "battery",
+            "alternator",
+            "starter",
+            "light",
+            "headlight",
+            "wiring",
+            "electrical",
+            "no power"
+        ],
+        "AC": [
+            "ac",
+            "air conditioner",
+            "air conditioning",
+            "cold air",
+            "not cooling"
+        ],
+        "Tyres": [
+            "tyre",
+            "tire",
+            "puncture",
+            "flat tyre",
+            "flat tire"
+        ],
+        "Suspension": [
+            "shock absorber",
+            "shock",
+            "suspension",
+            "linkage",
+            "bushing"
+        ],
+        "Transmission": [
+            "gear",
+            "transmission",
+            "automatic transmission",
+            "gearbox",
+            "gear box"
+        ],
+        "Diagnostics": [
+            "check engine",
+            "diagnostic",
+            "scanner",
+            "fault code",
+            "error code"
+        ],
+        "Battery": [
+            "battery dead",
+            "dead battery",
+            "battery weak",
+            "battery low"
+        ]
+    }
+
+    for category, keywords in categories.items():
+        for keyword in keywords:
+            if keyword in text:
+                return category
+
+    return "Other"
+    AI_CUSTOMER_CARE_SYSTEM_PROMPT = """
+You are AutoEngineer's official AI Customer Care Assistant.
+
+AutoEngineer is a platform that connects vehicle owners with automobile
+engineers and service professionals.
+
+Your job is to help customers:
+
+1. Understand their vehicle-service problem.
+2. Identify the likely service category.
+3. Explain what information or evidence an engineer may need.
+4. Help them create a service request.
+5. Explain how AutoEngineer works.
+6. Explain quotes, payments, engineers, reviews and disputes.
+7. Encourage customers to use verified engineers on the platform.
+8. Suggest human engineer assistance when appropriate.
+
+IMPORTANT SAFETY RULES:
+
+- You are NOT a replacement for a qualified automobile engineer.
+- Never claim that you have physically inspected a vehicle.
+- Never guarantee a mechanical diagnosis from text alone.
+- Do not invent prices, engineers, booking status, payment status,
+  verification status or account information.
+- If a customer describes a dangerous situation, prioritize safety.
+- For fire, fuel leaks, brake failure, serious accidents, dangerous
+  overheating or another immediate hazard, tell the customer to stop
+  driving if safe to do so and seek emergency/professional assistance.
+- Do not encourage a customer to continue driving a dangerous vehicle.
+- Never request passwords, card PINs, OTPs, Paystack secret keys,
+  bank passwords or other sensitive credentials.
+- Keep answers concise, friendly and easy to understand.
+- Use Nigerian English where appropriate.
+- Do not overwhelm the customer with technical jargon.
+
+When appropriate, guide the customer toward:
+
+"Find Engineer → Chat → Get Quote → Approve → Service → Pay → Review"
+
+If the customer needs an engineer, recommend using AutoEngineer's
+service-request process rather than pretending to book an engineer
+yourself.
+
+You can ask useful follow-up questions such as:
+
+- What vehicle brand and model is it?
+- What year is the vehicle?
+- What exactly happened?
+- When did the problem start?
+- Is the vehicle still driveable?
+- Are there warning lights on the dashboard?
+- Can you upload a picture or video?
+
+Never pretend to have access to information that was not provided.
+"""
+ def generate_ai_customer_care(user_message, history=None, category="Other"):
+    """
+    Generate a safe AI Customer Care response.
+    """
+
+    if not openai_client:
+        return {
+            "success": False,
+            "message": (
+                "AI Customer Care is temporarily unavailable. "
+                "Please try again later or contact an engineer through AutoEngineer."
+            )
+        }
+
+    history = history or []
+
+    messages = []
+
+    for item in history[-10:]:
+        role = item.get("role")
+
+        if role not in ("user", "assistant"):
+            continue
+
+        body = str(item.get("body", "")).strip()
+
+        if not body:
+            continue
+
+        messages.append({
+            "role": role,
+            "content": body[:2000]
+        })
+
+    messages.append({
+        "role": "user",
+        "content": (
+            f"Detected service category: {category}\n\n"
+            f"Customer message:\n{user_message}"
+        )
+    })
+
+    try:
+        response = openai_client.responses.create(
+            model=OPENAI_MODEL,
+            instructions=AI_CUSTOMER_CARE_SYSTEM_PROMPT,
+            input=messages,
+            max_output_tokens=500
+        )
+
+        answer = (response.output_text or "").strip()
+
+        if not answer:
+            answer = (
+                "I'm sorry, I couldn't generate a response right now. "
+                "Please try again."
+            )
+
+        return {
+            "success": True,
+            "message": answer
+        }
+
+    except Exception:
+        app.logger.exception("AI Customer Care request failed")
+
+        return {
+            "success": False,
+            "message": (
+                "I'm having trouble connecting to AutoEngineer's AI Customer Care "
+                "right now. Please try again shortly."
+            )
+        }
+def get_ai_chat_history(conn, session_id, user_id=None, limit=10):
+    """
+    Get recent AI Customer Care messages.
+    """
+
+    if user_id:
+        rows = conn.execute(
+            """
+            SELECT role, body
+            FROM ai_chat_messages
+            WHERE session_id = ?
+            AND (user_id = ? OR user_id IS NULL)
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (session_id, user_id, limit)
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            """
+            SELECT role, body
+            FROM ai_chat_messages
+            WHERE session_id = ?
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (session_id, limit)
+        ).fetchall()
+
+    return [
+        {
+            "role": row["role"],
+            "body": row["body"]
+        }
+        for row in reversed(rows)
+    ]        
 def login_required(view):
     @wraps(view)
     def wrapped_view(*args, **kwargs):
@@ -620,6 +929,249 @@ def home():
     return render_template("index.html", current_user=current_user())
 
 
+ # =========================
+# AI CUSTOMER CARE API
+# =========================
+
+@app.route("/api/ai-customer-care", methods=["POST"])
+def ai_customer_care():
+    """
+    Public AI Customer Care endpoint.
+
+    Customers can use this without logging in.
+    Logged-in users get their conversation associated with their account.
+    """
+
+    data = request.get_json(silent=True) or {}
+
+    user_message = str(data.get("message", "")).strip()
+
+    if not user_message:
+        return {
+            "success": False,
+            "message": "Please type a message."
+        }, 400
+
+    # Prevent extremely large requests
+    if len(user_message) > 2000:
+        return {
+            "success": False,
+            "message": "Please keep your message below 2,000 characters."
+        }, 400
+
+    # Basic session identification
+    if "ai_chat_session_id" not in session:
+        session["ai_chat_session_id"] = secrets.token_urlsafe(24)
+
+    session_id = session["ai_chat_session_id"]
+
+    user = current_user()
+
+    user_id = user["id"] if user else None
+
+    # ---------------------------------
+    # BASIC RATE LIMIT
+    # ---------------------------------
+
+    now = datetime.now(timezone.utc)
+
+    last_ai_request = session.get("last_ai_request")
+
+    if last_ai_request:
+        try:
+            last_time = datetime.fromisoformat(last_ai_request)
+
+            seconds_since_last = (
+                now - last_time
+            ).total_seconds()
+
+            if seconds_since_last < 2:
+                return {
+                    "success": False,
+                    "message": "Please wait a moment before sending another message."
+                }, 429
+
+        except (ValueError, TypeError):
+            pass
+
+    session["last_ai_request"] = now.isoformat()
+
+    # ---------------------------------
+    # DETECT EMERGENCY
+    # ---------------------------------
+
+    emergency, matched_keywords = detect_emergency(user_message)
+
+    # ---------------------------------
+    # DETECT SERVICE CATEGORY
+    # ---------------------------------
+
+    category = detect_service_category(user_message)
+
+    with get_db() as conn:
+
+        # ---------------------------------
+        # LOAD PREVIOUS CONVERSATION
+        # ---------------------------------
+
+        history = get_ai_chat_history(
+            conn,
+            session_id,
+            user_id=user_id,
+            limit=10
+        )
+
+        # ---------------------------------
+        # SAVE CUSTOMER MESSAGE
+        # ---------------------------------
+
+        conn.execute(
+            """
+            INSERT INTO ai_chat_messages
+            (user_id, session_id, role, body)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                session_id,
+                "user",
+                user_message
+            )
+        )
+
+        # ---------------------------------
+        # EMERGENCY RESPONSE
+        # ---------------------------------
+
+        if emergency:
+
+            ai_message = (
+                "⚠️ This may be a safety-critical vehicle problem. "
+                "If you are currently driving, stop in a safe place if you "
+                "can do so safely. Do not continue driving a vehicle with "
+                "brake failure, fire, a serious fuel leak or dangerous "
+                "overheating. Please contact a qualified engineer or "
+                "emergency assistance immediately.\n\n"
+                "AutoEngineer can help you request professional assistance."
+            )
+
+            handoff = True
+
+        else:
+
+            # ---------------------------------
+            # GENERATE AI RESPONSE
+            # ---------------------------------
+
+            result = generate_ai_customer_care(
+                user_message=user_message,
+                history=history,
+                category=category
+            )
+
+            ai_message = result["message"]
+
+            handoff = False
+
+            # ---------------------------------
+            # HUMAN HANDOFF DETECTION
+            # ---------------------------------
+
+            handoff_phrases = [
+                "engineer",
+                "mechanic",
+                "inspect",
+                "inspection",
+                "physical inspection",
+                "come and check",
+                "need help",
+                "book an engineer",
+                "request an engineer"
+            ]
+
+            lower_message = user_message.lower()
+
+            if any(
+                phrase in lower_message
+                for phrase in handoff_phrases
+            ):
+                handoff = True
+
+        # ---------------------------------
+        # SAVE AI RESPONSE
+        # ---------------------------------
+
+        conn.execute(
+            """
+            INSERT INTO ai_chat_messages
+            (user_id, session_id, role, body)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                session_id,
+                "assistant",
+                ai_message
+            )
+        )
+
+        conn.commit()
+
+    return {
+        "success": True,
+        "message": ai_message,
+        "category": category,
+        "emergency": emergency,
+        "handoff": handoff
+    }
+
+
+@app.route("/api/ai-customer-care/clear", methods=["POST"])
+def clear_ai_customer_care():
+    """
+    Clear the current AI Customer Care conversation.
+    """
+
+    session_id = session.get("ai_chat_session_id")
+
+    if not session_id:
+        return {
+            "success": True
+        }
+
+    user = current_user()
+
+    user_id = user["id"] if user else None
+
+    with get_db() as conn:
+
+        if user_id:
+            conn.execute(
+                """
+                DELETE FROM ai_chat_messages
+                WHERE session_id = ?
+                AND (user_id = ? OR user_id IS NULL)
+                """,
+                (
+                    session_id,
+                    user_id
+                )
+            )
+        else:
+            conn.execute(
+                """
+                DELETE FROM ai_chat_messages
+                WHERE session_id = ?
+                """,
+                (session_id,)
+            )
+
+        conn.commit()
+
+    return {
+        "success": True,
+        "message": "AI Customer Care chat cleared."
+    }
 @app.route("/home")
 def home_alias():
     return redirect(url_for("home"))

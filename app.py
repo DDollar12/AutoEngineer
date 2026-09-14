@@ -1732,23 +1732,29 @@ def initialize_payment(request_id):
     user = current_user()
     amount = request.form.get("amount", type=int)
     payment_method = request.form.get("payment_method", "online")
+
     channels = {
         "bank": ["bank_transfer"],
         "card": ["card"],
         "ussd": ["ussd"],
         "online": ["card", "bank_transfer", "ussd"],
     }
+
     if payment_method not in channels:
         abort(400)
+
     with get_db() as conn:
         service_request = conn.execute(
             "SELECT * FROM service_requests WHERE id = ? AND customer_id = ?",
             (request_id, user["id"]),
         ).fetchone()
+
         if not service_request or not amount or amount <= 0:
             flash("Enter a valid payment amount for your booking.")
             return redirect(url_for("workspace"))
+
         reference = f"AE-{request_id}-{secrets.token_hex(8).upper()}"
+
         try:
             result = paystack_request(
                 "/transaction/initialize",
@@ -1759,26 +1765,64 @@ def initialize_payment(request_id):
                     "currency": "NGN",
                     "reference": reference,
                     "channels": channels[payment_method],
-                    "callback_url": url_for("payment_callback", _external=True),
-                    "metadata": {"request_id": request_id, "customer_id": user["id"]},
+                    "callback_url": url_for(
+                        "payment_callback",
+                        _external=True
+                    ),
+                    "metadata": {
+                        "request_id": request_id,
+                        "customer_id": user["id"],
+                    },
                 },
             )
-    except RuntimeError as error:
-        app.logger.error("Paystack subscription initialization failed: %s", error)
-        flash("Paystack subscription payment initialization failed. Please try again.")
-        return redirect(url_for("business"))
+
+        except RuntimeError as error:
+            app.logger.error(
+                "Paystack payment initialization failed: %s",
+                error
+            )
+            flash(
+                "Paystack payment initialization failed. "
+                "Please try again."
+            )
+            return redirect(url_for("workspace"))
 
         if not result.get("status") or not result.get("data", {}).get("authorization_url"):
-            flash("Paaystack could not initialize this payment.")
+            flash("Paystack could not initialize this payment.")
             return redirect(url_for("workspace"))
 
         engineer_id = service_request["engineer_id"]
         commission = round(amount * 0.10)
+
         conn.execute(
-            "INSERT INTO payments (request_id, customer_id, engineer_id, amount, commission, status, reference, channel, provider) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, 'paystack')",
-            (request_id, user["id"], engineer_id, amount, commission, reference, payment_method),
+            """
+            INSERT INTO payments
+            (
+                request_id,
+                customer_id,
+                engineer_id,
+                amount,
+                commission,
+                status,
+                reference,
+                channel,
+                provider
+            )
+            VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, 'paystack')
+            """,
+            (
+                request_id,
+                user["id"],
+                engineer_id,
+                amount,
+                commission,
+                reference,
+                payment_method,
+            ),
         )
+
         conn.commit()
+
         return redirect(result["data"]["authorization_url"])
 
 

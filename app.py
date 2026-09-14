@@ -134,12 +134,7 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
-        )
-
-             )
-    """
-)
-                 
+        )         
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS ai_chat_messages (

@@ -1763,10 +1763,10 @@ def initialize_payment(request_id):
                     "metadata": {"request_id": request_id, "customer_id": user["id"]},
                 },
             )
-       except RuntimeError as error:
-            app.logger.error("Paystack payment initialization failed: %s", error)
-            flash("Paystack payment initialization failed. Please try again.")
-            return redirect(url_for("workspace"))
+    except RuntimeError as error:
+        app.logger.error("Paystack subscription initialization failed: %s", error)
+        flash("Paystack subscription payment initialization failed. Please try again.")
+        return redirect(url_for("business"))
 
         if not result.get("status") or not result.get("data", {}).get("authorization_url"):
             flash("Paaystack could not initialize this payment.")

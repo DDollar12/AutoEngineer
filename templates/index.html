@@ -3,81 +3,1458 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoEngineer</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <title>AutoEngineer | Find Trusted Automobile Engineers</title>
+
+    <meta name="description"
+          content="AutoEngineer connects vehicle owners with automobile engineers and service professionals across Nigeria. Find an engineer, explain your vehicle problem, receive a quote and manage your service in one place.">
+
+    <style>
+
+        /* ==============================
+           GLOBAL
+        ============================== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f6f9fc;
+            color: #172033;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1180px;
+            margin: auto;
+        }
+
+
+        /* ==============================
+           NAVBAR
+        ============================== */
+
+        .navbar {
+            width: 100%;
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #e6ebf1;
+            padding: 15px 5%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 9999;
+        }
+
+        .logo {
+            font-size: 26px;
+            font-weight: 900;
+            color: #0866d5;
+        }
+
+        .logo span {
+            color: #172033;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 23px;
+        }
+
+        .nav-links a {
+            color: #344054;
+            font-size: 15px;
+            font-weight: 700;
+            transition: 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #0866d5;
+        }
+
+        .login-btn {
+            background: #0866d5;
+            color: white !important;
+            padding: 10px 19px;
+            border-radius: 9px;
+        }
+
+        .login-btn:hover {
+            background: #064fa6 !important;
+        }
+
+        .menu-toggle {
+            display: none;
+            border: none;
+            background: transparent;
+            font-size: 31px;
+            cursor: pointer;
+            color: #172033;
+        }
+
+
+        /* ==============================
+           HERO
+        ============================== */
+
+        .hero {
+            min-height: 690px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 85% 20%, rgba(8,102,213,0.16), transparent 28%),
+                radial-gradient(circle at 10% 90%, rgba(0,180,255,0.10), transparent 30%),
+                linear-gradient(135deg, #eef7ff, #ffffff 55%, #f5f9ff);
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            width: 450px;
+            height: 450px;
+            border: 1px solid rgba(8,102,213,0.10);
+            border-radius: 50%;
+            right: -160px;
+            top: 40px;
+        }
+
+        .hero-container {
+            width: 90%;
+            max-width: 1180px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 60px;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: #e4f1ff;
+            color: #0866d5;
+            padding: 8px 15px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 22px;
+        }
+
+        .hero h1 {
+            font-size: clamp(42px, 6vw, 67px);
+            line-height: 1.03;
+            letter-spacing: -2px;
+            margin-bottom: 25px;
+            color: #101828;
+        }
+
+        .hero h1 span {
+            color: #0866d5;
+        }
+
+        .hero-description {
+            color: #667085;
+            font-size: 18px;
+            max-width: 650px;
+            margin-bottom: 30px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .primary-btn,
+        .secondary-btn {
+            padding: 14px 23px;
+            border-radius: 10px;
+            font-weight: 800;
+            display: inline-block;
+            transition: 0.25s;
+        }
+
+        .primary-btn {
+            background: #0866d5;
+            color: white;
+            box-shadow: 0 10px 25px rgba(8,102,213,0.25);
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-3px);
+            background: #064fa6;
+        }
+
+        .secondary-btn {
+            background: white;
+            color: #0866d5;
+            border: 1px solid #cbd8e8;
+        }
+
+        .secondary-btn:hover {
+            transform: translateY(-3px);
+            border-color: #0866d5;
+        }
+
+
+        /* HERO CARD */
+
+        .hero-card {
+            background: rgba(255,255,255,0.92);
+            padding: 32px;
+            border-radius: 25px;
+            border: 1px solid #e1e9f2;
+            box-shadow: 0 25px 70px rgba(20,50,90,0.14);
+            position: relative;
+        }
+
+        .hero-car {
+            height: 210px;
+            border-radius: 18px;
+            background:
+                linear-gradient(135deg, #0866d5, #073b78);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 100px;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-car::after {
+            content: "";
+            position: absolute;
+            width: 250px;
+            height: 250px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 50%;
+        }
+
+        .hero-card h3 {
+            font-size: 23px;
+            margin-bottom: 8px;
+        }
+
+        .hero-card p {
+            color: #667085;
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+
+        .feature-line {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 9px 0;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .check {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #e6f7ee;
+            color: #14804a;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+
+
+        /* ==============================
+           BONUS
+        ============================== */
+
+        .bonus {
+            width: 90%;
+            max-width: 1050px;
+            margin: -30px auto 70px;
+            background: #101828;
+            color: white;
+            border-radius: 17px;
+            padding: 23px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 18px 40px rgba(16,24,40,0.15);
+        }
+
+        .bonus strong {
+            color: #58a9ff;
+        }
+
+        .bonus a {
+            background: #0866d5;
+            color: white;
+            padding: 10px 17px;
+            border-radius: 8px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+
+        /* ==============================
+           GENERAL SECTIONS
+        ============================== */
+
+        .section {
+            padding: 90px 0;
+        }
+
+        .section-heading {
+            text-align: center;
+            max-width: 760px;
+            margin: 0 auto 55px;
+        }
+
+        .section-heading .small-title {
+            color: #0866d5;
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section-heading h2 {
+            font-size: 39px;
+            line-height: 1.2;
+            margin: 10px 0 15px;
+            color: #101828;
+        }
+
+        .section-heading p {
+            color: #667085;
+        }
+
+
+        /* ==============================
+           HOW IT WORKS
+        ============================== */
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 24px;
+        }
+
+        .step {
+            background: white;
+            padding: 32px;
+            border: 1px solid #e5eaf0;
+            border-radius: 17px;
+            transition: 0.25s;
+        }
+
+        .step:hover {
+            transform: translateY(-7px);
+            box-shadow: 0 20px 45px rgba(20,50,90,0.10);
+        }
+
+        .step-number {
+            width: 48px;
+            height: 48px;
+            background: #e7f2ff;
+            color: #0866d5;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            margin-bottom: 20px;
+        }
+
+        .step h3 {
+            margin-bottom: 10px;
+        }
+
+        .step p {
+            color: #667085;
+            font-size: 15px;
+        }
+
+
+        /* ==============================
+           PURPOSE
+        ============================== */
+
+        .purpose {
+            background: white;
+        }
+
+        .purpose-grid {
+            display: grid;
+            grid-template-columns: 0.8fr 1.2fr;
+            gap: 55px;
+            align-items: center;
+        }
+
+        .purpose-card {
+            background: linear-gradient(145deg,#0866d5,#06366c);
+            color: white;
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 0 25px 60px rgba(8,102,213,0.25);
+        }
+
+        .purpose-card .big-icon {
+            font-size: 65px;
+            margin-bottom: 20px;
+        }
+
+        .purpose-card h3 {
+            font-size: 27px;
+            margin-bottom: 12px;
+        }
+
+        .purpose-text h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        .purpose-text p {
+            color: #667085;
+            margin-bottom: 16px;
+        }
+
+
+        /* ==============================
+           HOW TO USE
+        ============================== */
+
+        .guide {
+            background: #f0f6fc;
+        }
+
+        .guide-list {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        .guide-item {
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 20px;
+            border: 1px solid #e3e9ef;
+        }
+
+        .guide-number {
+            min-width: 43px;
+            height: 43px;
+            background: #0866d5;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+        }
+
+        .guide-item h3 {
+            margin-bottom: 5px;
+        }
+
+        .guide-item p {
+            color: #667085;
+            font-size: 15px;
+        }
+
+
+        /* ==============================
+           ABOUT
+        ============================== */
+
+        .about {
+            background: white;
+        }
+
+        .about-content {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        .about-content h3 {
+            font-size: 25px;
+            margin: 30px 0 10px;
+            color: #101828;
+        }
+
+        .about-content p {
+            color: #667085;
+            margin-bottom: 18px;
+        }
+
+        .story-box {
+            margin-top: 35px;
+            padding: 30px;
+            background: #f5f9ff;
+            border-left: 5px solid #0866d5;
+            border-radius: 12px;
+        }
+
+
+        /* ==============================
+           CTA
+        ============================== */
+
+        .cta {
+            width: 90%;
+            max-width: 1150px;
+            margin: 70px auto;
+            padding: 70px 30px;
+            text-align: center;
+            color: white;
+            border-radius: 25px;
+            background:
+                radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 30%),
+                linear-gradient(135deg,#0866d5,#06366c);
+            box-shadow: 0 25px 60px rgba(8,102,213,0.25);
+        }
+
+        .cta h2 {
+            font-size: 39px;
+            margin-bottom: 12px;
+        }
+
+        .cta p {
+            opacity: 0.9;
+            margin-bottom: 25px;
+        }
+
+        .cta a {
+            background: white;
+            color: #0866d5;
+            padding: 14px 24px;
+            border-radius: 9px;
+            font-weight: 800;
+            display: inline-block;
+        }
+
+
+        /* ==============================
+           FOOTER
+        ============================== */
+
+        footer {
+            background: #101828;
+            color: #aeb8c7;
+            text-align: center;
+            padding: 35px 20px;
+        }
+
+        footer strong {
+            color: white;
+        }
+
+
+        /* ==============================
+           MOBILE
+        ============================== */
+
+        @media(max-width:800px) {
+
+            .navbar {
+                padding: 14px 5%;
+                position: sticky;
+            }
+
+            .logo {
+                font-size: 22px;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background: white;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
+                padding: 8px 5% 18px;
+                box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+            }
+
+            .nav-links.show {
+                display: flex;
+            }
+
+            .nav-links a {
+                padding: 13px 5px;
+                border-bottom: 1px solid #edf0f4;
+            }
+
+            .nav-links .login-btn {
+                text-align: center;
+                margin-top: 10px;
+            }
+
+            .hero {
+                min-height: auto;
+                padding: 70px 0;
+            }
+
+            .hero-container {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h1 {
+                font-size: 43px;
+                letter-spacing: -1px;
+            }
+
+            .hero-card {
+                padding: 22px;
+            }
+
+            .hero-car {
+                height: 180px;
+            }
+
+            .bonus {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .steps {
+                grid-template-columns: 1fr;
+            }
+
+            .purpose-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-heading h2 {
+                font-size: 30px;
+            }
+
+            .purpose-text h2 {
+                font-size: 30px;
+            }
+
+            .guide-item {
+                padding: 20px;
+            }
+
+            .cta h2 {
+                font-size: 30px;
+            }
+        }
+
+    </style>
 </head>
 
+
 <body>
-    <nav>
-        <a class="logo" href="{{ url_for('home') }}">
-            <img src="{{ url_for('static', filename='img/autoengineer-logo.svg') }}" alt="AutoEngineer home">
+
+
+<!-- ==========================================
+     NAVIGATION
+=========================================== -->
+
+<nav class="navbar">
+
+    <a href="{{ url_for('home') }}" class="logo">
+        Auto<span>Engineer</span>
+    </a>
+
+    <button class="menu-toggle"
+            onclick="toggleMenu()"
+            aria-label="Open navigation menu">
+        ☰
+    </button>
+
+    <div class="nav-links" id="navLinks">
+
+        <a href="{{ url_for('home') }}">Home</a>
+
+        <a href="{{ url_for('about') }}">About</a>
+
+        <a href="{{ url_for('find_engineers') }}">Engineers</a>
+
+        <a href="{{ url_for('customer_register') }}">
+            Customer
         </a>
 
-        <div>
-            <a href="/">Home</a>
-            <a href="{{ url_for('about') }}">About</a>
-            <a href="{{ url_for('engineer_register') }}">Engineer</a>
-            <a href="{{ url_for('customer_register') }}">Customer</a>
-            <a href="{{ url_for('login') }}">Login</a>
-        </div>
-    </nav>
+        <a href="{{ url_for('engineer_register') }}">
+            Engineer
+        </a>
 
-    <section class="hero">
-        <div class="hero-content">
-            <h1>Find the right Automobile Engineer</h1>
-            <p>
-                Get professional automobile repair and engineering services from trusted engineers across Nigeria.
+        <a href="{{ url_for('login') }}" class="login-btn">
+            Login
+        </a>
+
+    </div>
+
+</nav>
+
+
+<!-- ==========================================
+     HERO
+=========================================== -->
+
+<section class="hero">
+
+    <div class="hero-container">
+
+        <div>
+
+            <div class="hero-badge">
+                🇳🇬 BUILT FOR NIGERIAN VEHICLE OWNERS
+            </div>
+
+            <h1>
+                Your vehicle deserves
+                the <span>right engineer.</span>
+            </h1>
+
+            <p class="hero-description">
+                AutoEngineer makes it easier to find automobile engineers,
+                explain your vehicle problem, communicate securely,
+                receive a clear service price and manage your vehicle
+                service journey in one place.
             </p>
 
-            <div class="offer-banner">
-                <strong>New applicant bonus: #200</strong>
-                <span>Refer someone with your referral link and earn a #200 bonus.</span>
+            <div class="hero-buttons">
+
+                <a href="{{ url_for('request_service') }}"
+                   class="primary-btn">
+                    🚗 Request a Service
+                </a>
+
+                <a href="{{ url_for('find_engineers') }}"
+                   class="secondary-btn">
+                    🔎 Find an Engineer
+                </a>
+
             </div>
 
-            <a href="{{ url_for('customer_register') }}" class="button">
-                Register as Customer
-            </a>
-
-            <a href="{{ url_for('engineer_register') }}" class="button secondary">
-                Register as Engineer
-            </a>
         </div>
-    </section>
 
-    <section class="services" id="services">
-        <h2>How AutoEngineer Works</h2>
-        <p>Connect with skilled Nigerian automobile engineers, get a clear quote, and keep every service request in one place.</p>
 
-        <div class="cards">
-            <div class="card feature-card">
-                <img src="{{ url_for('static', filename='img/car-diagnostics.svg') }}" alt="Automobile diagnostics service">
-                <h3>Find an Engineer</h3>
-                <p>
-                    Search for automobile engineers based on location, expertise, and availability.
-                </p>
+        <div class="hero-card">
+
+            <div class="hero-car">
+                🚘
             </div>
 
-            <div class="card feature-card">
-                <img src="{{ url_for('static', filename='img/chat-support.svg') }}" alt="Secure chat support">
-                <h3>Chat Securely</h3>
-                <p>
-                    Discuss your vehicle problem directly with the engineer through the platform.
-                </p>
+            <h3>
+                Find. Chat. Get a Price. Service.
+            </h3>
+
+            <p>
+                AutoEngineer brings the important parts of your
+                automobile service journey together on one platform.
+            </p>
+
+            <div class="feature-line">
+                <span class="check">✓</span>
+                Connect with automobile engineers
             </div>
 
-            <div class="card feature-card">
-                <img src="{{ url_for('static', filename='img/service-quote.svg') }}" alt="Service quote document">
-                <h3>Get a Price</h3>
-                <p>
-                    Receive a clear service price before approving the work.
-                </p>
+            <div class="feature-line">
+                <span class="check">✓</span>
+                Discuss your vehicle problem
             </div>
+
+            <div class="feature-line">
+                <span class="check">✓</span>
+                Get a clear service price
+            </div>
+
+            <div class="feature-line">
+                <span class="check">✓</span>
+                Keep your service request organised
+            </div>
+
         </div>
-    </section>
 
-    <footer>
-        <p>&copy; 2026 AutoEngineer. All rights reserved.</p>
-    </footer>
+    </div>
+
+</section>
+
+
+<!-- ==========================================
+     BONUS
+=========================================== -->
+
+<div class="bonus">
+
+    <div>
+        🎁 <strong>New applicant bonus:</strong>
+        Refer someone with your referral link and earn ₦200.
+    </div>
+
+    <a href="{{ url_for('customer_register') }}">
+        Get Started
+    </a>
+
+</div>
+
+
+<!-- ==========================================
+     HOW IT WORKS
+=========================================== -->
+
+<section class="section">
+
+    <div class="container">
+
+        <div class="section-heading">
+
+            <div class="small-title">
+                Simple Process
+            </div>
+
+            <h2>
+                How AutoEngineer Works
+            </h2>
+
+            <p>
+                We are building a simpler way for vehicle owners
+                to connect with automobile service professionals.
+            </p>
+
+        </div>
+
+
+        <div class="steps">
+
+            <div class="step">
+
+                <div class="step-number">
+                    01
+                </div>
+
+                <h3>
+                    Find an Engineer
+                </h3>
+
+                <p>
+                    Search for automobile engineers according to
+                    your service needs, location, expertise and
+                    availability.
+                </p>
+
+            </div>
+
+
+            <div class="step">
+
+                <div class="step-number">
+                    02
+                </div>
+
+                <h3>
+                    Chat Securely
+                </h3>
+
+                <p>
+                    Explain what is wrong with your vehicle and
+                    communicate directly with the engineer through
+                    the platform.
+                </p>
+
+            </div>
+
+
+            <div class="step">
+
+                <div class="step-number">
+                    03
+                </div>
+
+                <h3>
+                    Get a Price
+                </h3>
+
+                <p>
+                    Receive a clear service price before approving
+                    the work so you can make an informed decision.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==========================================
+     PURPOSE
+=========================================== -->
+
+<section class="section purpose">
+
+    <div class="container purpose-grid">
+
+        <div class="purpose-card">
+
+            <div class="big-icon">
+                🛠️
+            </div>
+
+            <h3>
+                More than finding a mechanic.
+            </h3>
+
+            <p>
+                AutoEngineer is designed to create a more organised,
+                transparent and convenient way of handling automobile
+                services.
+            </p>
+
+        </div>
+
+
+        <div class="purpose-text">
+
+            <div class="small-title">
+                Our Purpose
+            </div>
+
+            <h2>
+                Why AutoEngineer Exists
+            </h2>
+
+            <p>
+                Finding the right person to work on a vehicle can
+                sometimes be difficult. Vehicle owners may depend
+                heavily on referrals, recommendations or people they
+                already know.
+            </p>
+
+            <p>
+                AutoEngineer was created with the idea that technology
+                can make this process easier. Instead of leaving the
+                entire experience scattered across phone calls,
+                messages and physical conversations, the goal is to
+                bring the important parts of the process into one
+                organised platform.
+            </p>
+
+            <p>
+                A customer should be able to explain a vehicle problem,
+                find an appropriate automobile engineer, communicate
+                with that engineer, understand the expected service
+                cost and keep a record of the request.
+            </p>
+
+            <p>
+                At its core, AutoEngineer is about creating a better
+                connection between vehicle owners and automobile
+                professionals.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==========================================
+     HOW TO USE
+=========================================== -->
+
+<section class="section guide">
+
+    <div class="container">
+
+        <div class="section-heading">
+
+            <div class="small-title">
+                User Guide
+            </div>
+
+            <h2>
+                How to Use AutoEngineer
+            </h2>
+
+            <p>
+                Whether you are a vehicle owner looking for assistance
+                or an automobile engineer looking for customers,
+                AutoEngineer is designed to make the process easier.
+            </p>
+
+        </div>
+
+
+        <div class="guide-list">
+
+
+            <div class="guide-item">
+
+                <div class="guide-number">
+                    1
+                </div>
+
+                <div>
+
+                    <h3>
+                        Create Your Account
+                    </h3>
+
+                    <p>
+                        Customers can register as vehicle owners,
+                        while automobile professionals can register
+                        as engineers. Provide the required information
+                        so your account can be properly set up.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="guide-item">
+
+                <div class="guide-number">
+                    2
+                </div>
+
+                <div>
+
+                    <h3>
+                        Tell Us About Your Vehicle
+                    </h3>
+
+                    <p>
+                        Provide relevant information about your vehicle
+                        and the problem you are experiencing. The more
+                        useful information you provide, the easier it
+                        becomes for an engineer to understand your
+                        request.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="guide-item">
+
+                <div class="guide-number">
+                    3
+                </div>
+
+                <div>
+
+                    <h3>
+                        Request a Service
+                    </h3>
+
+                    <p>
+                        Select the type of automobile service you need
+                        and describe the problem. You can provide useful
+                        details that may help the engineer understand
+                        what you need before the physical service.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="guide-item">
+
+                <div class="guide-number">
+                    4
+                </div>
+
+                <div>
+
+                    <h3>
+                        Find an Engineer
+                    </h3>
+
+                    <p>
+                        Explore available automobile engineers and
+                        choose the professional that best matches
+                        your service requirement.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="guide-item">
+
+                <div class="guide-number">
+                    5
+                </div>
+
+                <div>
+
+                    <h3>
+                        Communicate Through the Platform
+                    </h3>
+
+                    <p>
+                        Discuss the vehicle issue with the engineer
+                        through AutoEngineer. This keeps important
+                        service-related communication connected to
+                        the service request.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="guide-item">
+
+                <div class="guide-number">
+                    6
+                </div>
+
+                <div>
+
+                    <h3>
+                        Receive Your Service Price
+                    </h3>
+
+                    <p>
+                        Before proceeding with the work, the customer
+                        can review the service price provided by the
+                        engineer and make an informed decision.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="guide-item">
+
+                <div class="guide-number">
+                    7
+                </div>
+
+                <div>
+
+                    <h3>
+                        Approve and Proceed
+                    </h3>
+
+                    <p>
+                        Once you are comfortable with the service
+                        arrangement, proceed with the request and
+                        coordinate the service with the engineer.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="guide-item">
+
+                <div class="guide-number">
+                    8
+                </div>
+
+                <div>
+
+                    <h3>
+                        Complete and Review
+                    </h3>
+
+                    <p>
+                        After the service is completed, the customer
+                        can provide feedback about the experience.
+                        Reviews help improve transparency and help
+                        future users make better decisions.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==========================================
+     ABOUT AUTOENGINEER
+=========================================== -->
+
+<section class="section about">
+
+    <div class="container">
+
+        <div class="section-heading">
+
+            <div class="small-title">
+                Our Story
+            </div>
+
+            <h2>
+                About AutoEngineer
+            </h2>
+
+            <p>
+                A technology idea inspired by a real understanding
+                of automobile engineering and the everyday challenges
+                vehicle owners face.
+            </p>
+
+        </div>
+
+
+        <div class="about-content">
+
+            <h3>
+                Where the Idea Started
+            </h3>
+
+            <p>
+                AutoEngineer did not start as an attempt to simply
+                create another website. It started from an interest
+                in automobiles, engineering and technology, combined
+                with the desire to solve a practical problem.
+            </p>
+
+            <p>
+                Growing up around automobile engineering gave me the
+                opportunity to understand that vehicles require more
+                than simply taking them to someone and hoping that
+                everything goes well. Understanding a vehicle problem,
+                identifying the right professional and having clarity
+                about the work being carried out can make a significant
+                difference.
+            </p>
+
+            <h3>
+                What Pushed Me to Build It
+            </h3>
+
+            <p>
+                One of the biggest motivations behind AutoEngineer was
+                the realisation that many automobile service experiences
+                can still be very informal. Customers often depend on
+                referrals, personal contacts and conversations that may
+                not leave a proper record of what was requested, what
+                was discussed or what was eventually agreed.
+            </p>
+
+            <p>
+                At the same time, there are many automobile engineers
+                and skilled professionals who have the ability to solve
+                vehicle problems but may not have an easy digital
+                platform through which new customers can discover them.
+            </p>
+
+            <p>
+                I began thinking about what would happen if technology
+                could bring both sides together: vehicle owners who
+                need reliable automobile services and automobile
+                professionals who are ready to provide those services.
+            </p>
+
+            <div class="story-box">
+
+                <h3>
+                    The Idea
+                </h3>
+
+                <p>
+                    The idea became simple: create a platform where a
+                    vehicle owner can find an automobile engineer,
+                    explain the problem, communicate with the engineer,
+                    receive a service price and keep the important
+                    details of the service journey together.
+                </p>
+
+            </div>
+
+
+            <h3>
+                From an Idea to a Real Project
+            </h3>
+
+            <p>
+                AutoEngineer started as an idea, but I wanted to go
+                beyond simply talking about the idea. I wanted to build
+                something that people could actually open and use.
+            </p>
+
+            <p>
+                That led to the development of the platform, including
+                customer registration, engineer registration, service
+                requests, engineer discovery, communication,
+                dashboards and other features designed around the
+                automobile service experience.
+            </p>
+
+            <p>
+                Building the platform has also been a learning
+                experience. Instead of waiting until everything was
+                perfect before starting, the project has grown
+                gradually as new problems, ideas and possibilities
+                became clearer.
+            </p>
+
+
+            <h3>
+                What Keeps Me Motivated
+            </h3>
+
+            <p>
+                The motivation behind AutoEngineer is bigger than
+                creating a website. The goal is to demonstrate how
+                technology can be applied to an industry that people
+                interact with every day.
+            </p>
+
+            <p>
+                Cars are everywhere. People depend on vehicles for
+                work, business, education, transportation and family
+                responsibilities. When a vehicle develops a problem,
+                finding the right professional quickly can become very
+                important.
+            </p>
+
+            <p>
+                AutoEngineer is being developed with the belief that
+                the automobile service industry can benefit from a more
+                organised digital experience.
+            </p>
+
+
+            <h3>
+                Our Vision
+            </h3>
+
+            <p>
+                The long-term vision is for AutoEngineer to become a
+                trusted digital platform for automobile services,
+                connecting vehicle owners with qualified automobile
+                professionals while making the service journey more
+                transparent, organised and convenient.
+            </p>
+
+            <p>
+                The platform can continue to evolve with features such
+                as better engineer discovery, service history,
+                maintenance reminders, emergency assistance, improved
+                payment systems, professional verification and other
+                tools that can make vehicle ownership easier.
+            </p>
+
+            <p>
+                AutoEngineer is still growing, but the principle behind
+                it remains simple: help people find the right
+                automobile professional and make the service experience
+                easier to understand and manage.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==========================================
+     FINAL CTA
+=========================================== -->
+
+<section class="cta">
+
+    <h2>
+        Your next automobile service starts here.
+    </h2>
+
+    <p>
+        Find an engineer, explain your problem and take the next
+        step toward getting your vehicle serviced.
+    </p>
+
+    <a href="{{ url_for('request_service') }}">
+        🚗 Request a Service
+    </a>
+
+</section>
+
+
+<!-- ==========================================
+     FOOTER
+=========================================== -->
+
+<footer>
+
+    <p>
+        <strong>AutoEngineer</strong>
+    </p>
+
+    <p>
+        Connecting vehicle owners with automobile professionals.
+    </p>
+
+    <p>
+        © 2026 AutoEngineer. All rights reserved.
+    </p>
+
+</footer>
+
+
+<!-- ==========================================
+     MOBILE MENU SCRIPT
+=========================================== -->
+
+<script>
+
+function toggleMenu() {
+
+    const menu = document.getElementById("navLinks");
+
+    menu.classList.toggle("show");
+
+}
+
+</script>
+
+
 </body>
 </html>
 

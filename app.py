@@ -546,9 +546,11 @@ def current_user():
 
     with get_db() as conn:
         return conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        
 # =========================
 # AI CUSTOMER CARE HELPERS
 # =========================
+
 
 def detect_emergency(message):
     """
@@ -592,7 +594,7 @@ def detect_emergency(message):
     ]
 
     return len(matched) > 0, matched
-    
+
 def detect_service_category(message):
     """
     Gives the AI a simple starting category for the customer's problem.
@@ -614,7 +616,6 @@ def detect_service_category(message):
             "knocking"
         ],
         "Electrical": [
-            "battery",
             "alternator",
             "starter",
             "light",
@@ -672,7 +673,13 @@ def detect_service_category(message):
                 return category
 
     return "Other"
-    AI_CUSTOMER_CARE_SYSTEM_PROMPT = """
+
+
+# =========================
+# AI CUSTOMER CARE PROMPT
+# =========================
+
+AI_CUSTOMER_CARE_SYSTEM_PROMPT = """
 You are AutoEngineer's official AI Customer Care Assistant.
 
 AutoEngineer is a platform that connects vehicle owners with automobile
@@ -727,7 +734,13 @@ You can ask useful follow-up questions such as:
 
 Never pretend to have access to information that was not provided.
 """
- def generate_ai_customer_care(user_message, history=None, category="Other"):
+
+
+# =========================
+# GENERATE AI RESPONSE
+# =========================
+
+def generate_ai_customer_care(user_message, history=None, category="Other"):
     """
     Generate a safe AI Customer Care response.
     """
@@ -800,6 +813,12 @@ Never pretend to have access to information that was not provided.
                 "right now. Please try again shortly."
             )
         }
+
+
+# =========================
+# AI CHAT HISTORY
+# =========================
+
 def get_ai_chat_history(conn, session_id, user_id=None, limit=10):
     """
     Get recent AI Customer Care messages.
@@ -835,7 +854,8 @@ def get_ai_chat_history(conn, session_id, user_id=None, limit=10):
             "body": row["body"]
         }
         for row in reversed(rows)
-    ]        
+    ]
+    
 def login_required(view):
     @wraps(view)
     def wrapped_view(*args, **kwargs):

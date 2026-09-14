@@ -1763,12 +1763,13 @@ def initialize_payment(request_id):
                     "metadata": {"request_id": request_id, "customer_id": user["id"]},
                 },
             )
-        except (RuntimeError, HTTPError, URLError, ValueError):
-            flash("Paystack is not configured or could not be reached. Check your payment settings.")
+       except RuntimeError as error:
+            app.logger.error("Paystack payment initialization failed: %s", error)
+            flash("Paystack payment initialization failed. Please try again.")
             return redirect(url_for("workspace"))
 
         if not result.get("status") or not result.get("data", {}).get("authorization_url"):
-            flash("Paystack could not initialize this payment.")
+            flash("Paaystack could not initialize this payment.")
             return redirect(url_for("workspace"))
 
         engineer_id = service_request["engineer_id"]

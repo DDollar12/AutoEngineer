@@ -906,22 +906,61 @@ def request_access(conn, request_id, user_id):
 def paystack_request(endpoint, method="GET", payload=None):
     if not PAYSTACK_SECRET_KEY:
         raise RuntimeError("PAYSTACK_SECRET_KEY is not configured")
+
+    if not PAYSTACK_SECRET_KEY.startswith(("sk_test_", "sk_live_")):
+        raise RuntimeError("PAYSTACK_SECRET_KEY format is invalid")
+
     body = None
+
     headers = {
         "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
         "Content-Type": "application/json",
+        "Accept": "application/json",
     }
+
     if payload is not None:
         body = json.dumps(payload).encode("utf-8")
+
     request_object = UrlRequest(
         f"{PAYSTACK_BASE_URL}{endpoint}",
         data=body,
         headers=headers,
         method=method,
     )
-    with urlopen(request_object, timeout=20) as response:
-        return json.loads(response.read().decode("utf-8"))
 
+    try:
+        with urlopen(request_object, timeout=20) as response:
+            response_body = response.read().decode("utf-8")
+            return json.loads(response_body)
+
+    except HTTPError as error:
+        error_body = error.read().decode("utf-8", errors="replace")
+        app.logger.error(
+            "Paystack HTTP error %s: %s",
+            error.code,
+            error_body
+        )
+        raise RuntimeError(
+            f"Paystack returned HTTP {error.code}: {error_body}"
+        ) from error
+
+    except URLError as error:
+        app.logger.error(
+            "Paystack connection error: %s",
+            error.reason
+        )
+        raise RuntimeError(
+            f"Could not connect to Paystack: {error.reason}"
+        ) from error
+
+    except (ValueError, json.JSONDecodeError) as error:
+        app.logger.error(
+            "Invalid Paystack response: %s",
+            error
+        )
+        raise RuntimeError(
+            "Paystack returned an invalid response."
+        ) from error
 
 def send_phone_otp(phone_number, otp):
     if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN or not TWILIO_FROM_NUMBER:
@@ -1854,8 +1893,10 @@ def initialize_subscription():
 
     try:
         result = paystack_request("/transaction/initialize", method="POST", payload=payload)
-    except (RuntimeError, HTTPError, URLError, ValueError):
-        flash("Paystack is not configured or could not be reached. Check your payment settings.")
+    except RuntimeError as error:
+        app.logger.error("Paystack payment initialization failed: %s", error)
+        flash("Paystack payment initialization failed. Please try again.")
+        return redirect(url_for("workspace"))
         return redirect(url_for("business"))
     authorization_url = result.get("data", {}).get("authorization_url")
     if not result.get("status") or not authorization_url:

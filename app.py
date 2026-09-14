@@ -136,28 +136,9 @@ def init_db():
             """
         )
 
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS service_requests (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                customer_id INTEGER NOT NULL,
-                engineer_id INTEGER,
-                service_type TEXT NOT NULL,
-                problem TEXT NOT NULL,
-                location TEXT NOT NULL,
-                customer_lat REAL,
-                customer_lng REAL,
-                engineer_lat REAL,
-                engineer_lng REAL,
-                location_updated_at TIMESTAMP,
-                status TEXT NOT NULL DEFAULT 'pending',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(customer_id) REFERENCES users(id),
-                FOREIGN KEY(engineer_id) REFERENCES users(id)
-                
-            )
-            """
-        )        
+             )
+    """
+)
                  
         conn.execute(
             """

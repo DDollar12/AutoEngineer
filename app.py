@@ -148,11 +148,11 @@ def execute(self, query, parameters=()):
     def rollback(self):
         self.connection.rollback()
 
-
 def init_db():
     with get_db() as conn:
-                if not DATABASE_URL.startswith(("postgres://", "postgresql://")):
+        if not DATABASE_URL.startswith(("postgres://", "postgresql://")):
             conn.execute("PRAGMA foreign_keys = ON")
+
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
@@ -171,7 +171,8 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
-        )         
+        )
+ 
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS ai_chat_messages (
@@ -184,6 +185,27 @@ def init_db():
             )
         """
         )
+        conn.execute(
+    """
+    CREATE TABLE IF NOT EXISTS service_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_id INTEGER NOT NULL,
+        engineer_id INTEGER,
+        service_type TEXT NOT NULL,
+        problem TEXT NOT NULL,
+        location TEXT NOT NULL,
+        customer_lat REAL,
+        customer_lng REAL,
+        engineer_lat REAL,
+        engineer_lng REAL,
+        location_updated_at TIMESTAMP,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(customer_id) REFERENCES users(id),
+        FOREIGN KEY(engineer_id) REFERENCES users(id)
+    )
+    """
+)
         service_request_columns = {
             row[1] if isinstance(row, sqlite3.Row) else row["name"]
             for row in conn.execute(

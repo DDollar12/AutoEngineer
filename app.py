@@ -87,14 +87,14 @@ class PostgresConnection:
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
-        if exception_type:
+         if exception_type:
             self.connection.rollback()
         else:
             self.connection.commit()
         self.connection.close()
 
-def execute(self, query, parameters=()):
-    stripped_query = query.strip()
+    def execute(self, query, parameters=()):
+        stripped_query = query.strip()
 
     if stripped_query.upper().startswith("PRAGMA TABLE_INFO"):
         table_name = stripped_query.split("(")[1].split(")")[0].strip()
